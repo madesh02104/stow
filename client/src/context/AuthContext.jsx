@@ -22,8 +22,13 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await API.get("/auth/me");
       setUser(data);
-    } catch {
-      localStorage.removeItem("stow_token");
+    } catch (err) {
+      // Only clear token on explicit 401 (invalid/expired token).
+      // Don't clear on network errors, CORS failures, or server-down scenarios
+      // so the user can retry after connectivity is restored.
+      if (err.response?.status === 401) {
+        localStorage.removeItem("stow_token");
+      }
     } finally {
       setLoading(false);
     }
