@@ -130,21 +130,21 @@ export default function QRScanner({ onScan, onClose }) {
 
         {/* Scanner area */}
         <div className="p-5">
-          {starting && (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 size={32} className="animate-spin text-primary" />
-              <p className="text-sm text-gray-500">Starting camera…</p>
-            </div>
-          )}
-
-          {/* Camera view (only when camera works) */}
+          {/* Camera view — always rendered so html5-qrcode can measure & inject the video */}
           {!cameraFailed && (
-            <div
-              id="qr-scanner-region"
-              ref={containerRef}
-              className="rounded-xl overflow-hidden"
-              style={{ display: starting ? "none" : "block" }}
-            />
+            <div className="relative" style={{ minHeight: starting ? 260 : "auto" }}>
+              {starting && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white rounded-xl">
+                  <Loader2 size={32} className="animate-spin text-primary" />
+                  <p className="text-sm text-gray-500">Starting camera…</p>
+                </div>
+              )}
+              <div
+                id="qr-scanner-region"
+                ref={containerRef}
+                className="rounded-xl overflow-hidden"
+              />
+            </div>
           )}
 
           {/* File upload fallback */}
