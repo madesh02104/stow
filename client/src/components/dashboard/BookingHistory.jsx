@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import API from "../../api";
 import StatusBadge from "../common/StatusBadge";
 import QRHandshake from "../common/QRHandshake";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInHours } from "date-fns";
 import {
   Package,
   Car,
@@ -14,12 +14,17 @@ import {
   Check,
   ArrowRight,
   Camera,
+  XCircle,
+  AlertTriangle,
+  IndianRupee,
 } from "lucide-react";
 
 export default function BookingHistory() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [qrModal, setQrModal] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
+  const [cancelConfirm, setCancelConfirm] = useState(null);
 
   const load = () => {
     API.get("/bookings/mine")
@@ -31,6 +36,32 @@ export default function BookingHistory() {
   useEffect(() => {
     load();
   }, []);
+
+  const handleCancelClick = (b) => {
+    const hoursLeft = differenceInHours(new Date(b.start_time), new Date());
+    const refundPercent = hoursLeft >= 24 ? 100 : 0;
+    setCancelConfirm({
+      id: b.id,
+      title: b.listing_title,
+      hoursLeft,
+      refundPercent,
+      totalPrice: b.total_price,
+    });
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelConfirm) return;
+    setCancellingId(cancelConfirm.id);
+    try {
+      await API.patch(`/bookings/${cancelConfirm.id}/cancel`);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to cancel booking");
+    } finally {
+      setCancellingId(null);
+      setCancelConfirm(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -108,7 +139,7 @@ export default function BookingHistory() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
               {b.status !== "cancelled" && b.custody_state !== "Completed" && (
                 <button
                   onClick={() =>
@@ -123,11 +154,40 @@ export default function BookingHistory() {
                   <Camera size={12} /> Scan QR
                 </button>
               )}
+              {/* Cancel button — only for non-cancelled, non-completed, non-in-custody */}
+              {b.status !== "cancelled" &&
+                b.custody_state !== "Completed" &&
+                b.custody_state !== "In-Custody" && (
+                  <button
+                    onClick={() => handleCancelClick(b)}
+                    disabled={cancellingId === b.id}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 border border-red-100 transition disabled:opacity-50"
+                  >
+                    {cancellingId === b.id ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <XCircle size={12} />
+                    )}
+                    Cancel Booking
+                  </button>
+                )}
               {b.custody_state === "Completed" && (
                 <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
                   <Check size={12} /> Transaction Complete
                 </span>
               )}
+              {/* Refund info for cancelled bookings */}
+              {b.status === "cancelled" && b.refund_amount > 0 && (
+                <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
+                  <IndianRupee size={11} /> ₹{b.refund_amount} refunded
+                </span>
+              )}
+              {b.status === "cancelled" &&
+                (b.refund_amount == null || b.refund_amount == 0) && (
+                  <span className="flex items-center gap-1 text-xs text-red-500 font-medium">
+                    No refund (cancelled late)
+                  </span>
+                )}
             </div>
           </div>
         </div>
@@ -192,6 +252,91 @@ export default function BookingHistory() {
             load();
           }}
         />
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle size={20} className="text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                Cancel Booking?
+              </h3>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to cancel your booking for{" "}
+              <strong>{cancelConfirm.title}</strong>?
+            </p>
+
+            {/* Refund info box */}
+            <div
+              className={`rounded-xl p-4 mb-5 ${
+                cancelConfirm.refundPercent === 100
+                  ? "bg-green-50 border border-green-200"
+                  : "bg-amber-50 border border-amber-200"
+              }`}
+            >
+              {cancelConfirm.refundPercent === 100 ? (
+                <div className="flex items-start gap-2">
+                  <IndianRupee
+                    size={16}
+                    className="text-green-600 flex-shrink-0 mt-0.5"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-green-800">
+                      100% Refund — ₹{cancelConfirm.totalPrice}
+                    </p>
+                    <p className="text-xs text-green-600 mt-0.5">
+                      You're cancelling {cancelConfirm.hoursLeft}+ hours before
+                      the slot. Full refund will be processed.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <AlertTriangle
+                    size={16}
+                    className="text-amber-600 flex-shrink-0 mt-0.5"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">
+                      No Refund
+                    </p>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      Less than 24 hours until your slot. Cancellations within
+                      24 hours are non-refundable.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setCancelConfirm(null)}
+                className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={handleCancelConfirm}
+                disabled={cancellingId}
+                className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 transition flex items-center justify-center gap-1.5"
+              >
+                {cancellingId ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <XCircle size={14} />
+                )}
+                {cancellingId ? "Cancelling…" : "Cancel Booking"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

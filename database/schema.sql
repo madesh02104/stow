@@ -88,6 +88,10 @@ CREATE TABLE bookings (
   custody_state VARCHAR(20) DEFAULT 'Pending',  -- Pending | In-Custody | Completed
   handed_over_at TIMESTAMPTZ,
   regotten_at TIMESTAMPTZ,
+  refund_amount NUMERIC(10,2) DEFAULT 0,
+  refund_percent INT DEFAULT 0,
+  item_photos TEXT[] DEFAULT ARRAY[]::TEXT[],
+  item_description TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

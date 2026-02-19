@@ -190,6 +190,7 @@ router.get("/:id", auth, async (req, res, next) => {
 });
 
 // ---------- Cancel booking ----------
+// Refund policy: cancel 24+ hrs before start_time → 100% refund, else 0%
 router.patch("/:id/cancel", auth, async (req, res, next) => {
   try {
     const booking = await db.query("SELECT * FROM bookings WHERE id = $1", [
@@ -197,12 +198,38 @@ router.patch("/:id/cancel", auth, async (req, res, next) => {
     ]);
     if (!booking.rows.length)
       return res.status(404).json({ error: "Not found" });
-    if (booking.rows[0].seeker_id !== req.user.id)
+
+    const b = booking.rows[0];
+    if (b.seeker_id !== req.user.id)
       return res.status(403).json({ error: "Forbidden" });
 
+    if (b.status === "cancelled")
+      return res.status(400).json({ error: "Already cancelled" });
+
+    if (b.custody_state === "In-Custody")
+      return res
+        .status(400)
+        .json({ error: "Cannot cancel while items are in custody" });
+
+    if (b.custody_state === "Completed")
+      return res
+        .status(400)
+        .json({ error: "Cannot cancel a completed booking" });
+
+    // Calculate refund
+    const hoursUntilStart =
+      (new Date(b.start_time) - new Date()) / (1000 * 60 * 60);
+    const refundPercent = hoursUntilStart >= 24 ? 100 : 0;
+    const refundAmount = +(b.total_price * (refundPercent / 100)).toFixed(2);
+
     const result = await db.query(
-      "UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *",
-      [req.params.id],
+      `UPDATE bookings SET
+         status = 'cancelled',
+         refund_amount = $1,
+         refund_percent = $2,
+         updated_at = NOW()
+       WHERE id = $3 RETURNING *`,
+      [refundAmount, refundPercent, b.id],
     );
     res.json(result.rows[0]);
   } catch (err) {
