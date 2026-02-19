@@ -109,7 +109,7 @@ export default function BookingHistory() {
 
             {/* Actions */}
             <div className="flex items-center gap-2 mt-3">
-              {b.status === "confirmed" && b.custody_state !== "Completed" && (
+              {b.status !== "cancelled" && b.custody_state !== "Completed" && (
                 <button
                   onClick={() =>
                     setQrModal({
