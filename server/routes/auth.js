@@ -32,7 +32,7 @@ router.post("/register", async (req, res, next) => {
       { id: user.id, phone: user.phone },
       process.env.JWT_SECRET,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN,
+        expiresIn: process.env.JWT_EXPIRES_IN || "7d",
       },
     );
 
@@ -67,7 +67,7 @@ router.post("/login", async (req, res, next) => {
       { id: user.id, phone: user.phone },
       process.env.JWT_SECRET,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN,
+        expiresIn: process.env.JWT_EXPIRES_IN || "7d",
       },
     );
 
