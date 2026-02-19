@@ -288,6 +288,29 @@ export default function Header() {
         {/* Mobile menu */}
         {open && (
           <div className="md:hidden border-t py-4 space-y-3">
+            {/* Mobile location picker */}
+            <button
+              onClick={() => {
+                setOpen(false);
+                setMapOpen(true);
+              }}
+              className="w-full flex items-center gap-2 px-2 py-2 rounded-lg bg-primary/5 text-sm"
+            >
+              <MapPin size={14} className="text-primary flex-shrink-0" />
+              {locLoading ? (
+                <span className="flex items-center gap-1 text-gray-500">
+                  <Loader2 size={12} className="animate-spin" /> Locating…
+                </span>
+              ) : address ? (
+                <span className="text-gray-700 font-medium truncate">
+                  {address}
+                </span>
+              ) : (
+                <span className="text-gray-400">Set your location</span>
+              )}
+              <ChevronDown size={12} className="text-gray-400 ml-auto" />
+            </button>
+
             <Link
               to="/"
               onClick={() => setOpen(false)}
