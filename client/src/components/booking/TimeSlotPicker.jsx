@@ -166,11 +166,11 @@ export default function TimeSlotPicker({
         <div className="text-sm text-gray-700 bg-white border border-gray-100 rounded-lg p-3 flex items-center justify-between">
           <span>
             <span className="font-semibold text-primary">
-              {format(new Date(selectedStart), "dd MMM, hh:mm a")}
+              {format(new Date(selectedStart), "dd/MM/yyyy, hh:mm a")}
             </span>
             {" → "}
             <span className="font-semibold text-primary">
-              {format(new Date(selectedEnd), "dd MMM, hh:mm a")}
+              {format(new Date(selectedEnd), "dd/MM/yyyy, hh:mm a")}
             </span>
           </span>
           <span className="text-xs text-slate-body">

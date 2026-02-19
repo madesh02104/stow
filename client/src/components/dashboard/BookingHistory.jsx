@@ -99,8 +99,8 @@ export default function BookingHistory() {
             <div className="flex items-center gap-3 mt-2 text-xs text-slate-body">
               <span className="flex items-center gap-1">
                 <Clock size={11} />
-                {format(parseISO(b.start_time), "dd MMM, HH:mm")} –{" "}
-                {format(parseISO(b.end_time), "HH:mm")}
+                {format(parseISO(b.start_time), "dd/MM/yyyy, HH:mm")} –{" "}
+                {format(parseISO(b.end_time), "dd/MM/yyyy, HH:mm")}
               </span>
               <span className="font-semibold text-primary">
                 ₹{b.total_price}

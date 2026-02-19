@@ -232,8 +232,9 @@ export default function ProfilePage() {
           <div className="bg-offwhite rounded-xl p-4 text-sm text-slate-body">
             Member since{" "}
             <span className="font-semibold text-gray-700">
-              {new Date(user.created_at).toLocaleDateString("en-IN", {
-                month: "long",
+              {new Date(user.created_at).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
                 year: "numeric",
               })}
             </span>
